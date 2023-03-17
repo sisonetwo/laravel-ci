@@ -1,0 +1,7 @@
+GET {{host}}:{{port}}{{context-path}}/api/mahasiswa
+Accept: application/json
+
+### get mahasiswa
+
+GET {{host}}:{{port}}{{context-path}}/api/mahasiswa/first
+Accept: application/json

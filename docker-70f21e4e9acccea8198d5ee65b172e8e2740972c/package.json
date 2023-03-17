@@ -1,0 +1,31 @@
+{
+    "private": true,
+    "scripts": {
+        "dev": "npm run development",
+        "development": "mix",
+        "watch": "mix watch",
+        "watch-poll": "mix watch -- --watch-options-poll=1000",
+        "hot": "mix watch --hot",
+        "prod": "npm run production",
+        "production": "mix --production",
+        "docker-install": "npm install -q && npm run-script dev"
+    },
+    "devDependencies": {
+        "axios": "^0.21",
+        "laravel-mix": "^6.0.6",
+        "less-loader": "^10.0.1",
+        "lodash": "^4.17.19",
+        "postcss": "^8.1.14",
+        "sass-loader": "^12.1.0",
+        "stylus-loader": "^6.1.0"
+    },
+    "dependencies": {
+        "@popperjs/core": "^2.9.3",
+        "bootstrap": "^5.1.0",
+        "datatables.net": "^1.10.25",
+        "datatables.net-bs5": "^1.10.25",
+        "font-awesome": "^4.7.0",
+        "jquery": "^3.6.0",
+        "jquery-serializejson": "^3.2.1"
+    }
+}

@@ -1,0 +1,171 @@
+stages:
+  - pre-build
+  - test
+  - build
+
+variables:
+  DOCKER_VERSION: "stable"
+  DOCKER_DIND_VERSION: "18.09-dind"
+  DOCKER_CONFIG_FILE: "--config .docker"
+  PROJECT_GROUP_ID: "com.maryanto.dimas.udemy"
+  NODE_VERSION: "14.15-alpine"
+  DOCKER_IMAGE_NAME: "$PRIVATE_REGISTRY_PUSH/$PROJECT_GROUP_ID/php-laravel"
+
+default:
+  tags:
+    - docker
+
+build:docker:php-laravel:
+  stage: pre-build
+  image: ${PRIVATE_REGISTRY_PULL}/docker:${DOCKER_VERSION}
+  services:
+    - name: ${PRIVATE_REGISTRY_PULL}/docker:${DOCKER_DIND_VERSION}
+      entrypoint: [ "dockerd-entrypoint.sh" ]
+      command: [
+          "--insecure-registry=192.168.88.21:8087",
+          "--insecure-registry=192.168.88.21:8086"
+      ]
+      alias: dockerd
+  variables:
+    DOCKER_HOST: tcp://dockerd:2375
+    DOCKER_DRIVER: overlay2
+    DOCKER_TLS_CERTDIR: ""
+    DOCKER_BUILD_ARGS_ENTRIPOINT: ""
+    DOCKERFILE_LOCATION: "-f Dockerfile-ci-build"
+  before_script:
+    - mkdir -p .docker/ && cat $DOCKER_CONF_JSON > .docker/config.json
+  script:
+    - docker $DOCKER_CONFIG_FILE build $DOCKERFILE_LOCATION $DOCKER_BUILD_ARGS_ENTRIPOINT -t $DOCKER_IMAGE_NAME:$CI_COMMIT_SHORT_SHA -t $DOCKER_IMAGE_NAME:latest .
+    - docker $DOCKER_CONFIG_FILE image push $DOCKER_IMAGE_NAME:$CI_COMMIT_SHORT_SHA
+    - docker $DOCKER_CONFIG_FILE image push $DOCKER_IMAGE_NAME:latest
+  only: # deploy with `only:changes: []`, works on branch master only
+    refs: [master, main]
+    changes:
+      - Dockerfile-ci-build
+  except:
+    refs:
+      - /-release/
+
+build:mix:production:
+  stage: pre-build
+  cache:
+    paths:
+      - node_modules
+  image: ${PRIVATE_REGISTRY_PULL}/node:${NODE_VERSION}
+  before_script:
+    - cat $NPM_PROXY > .npmrc
+    - npm install
+  script:
+    - npm run-script prod
+  only:
+    - /-release/
+  artifacts:
+    name: $CI_PROJECT_NAME-$CI_COMMIT_SHORT_SHA
+    paths:
+      - public/*
+
+test:laravel:
+  stage: test
+  services:
+    - name: $PRIVATE_REGISTRY_PULL/mysql:5.7
+      alias: mysql_server_testing
+  variables:
+    MYSQL_ROOT_PASSWORD: secretRootPassword
+    MYSQL_DATABASE: testing
+    MYSQL_USER: testing
+    MYSQL_PASSWORD: testing
+    APP_URL: ""
+    APP_ENV: production
+    APP_DEBUG: "false"
+    LOG_LEVEL: error
+    DB_CONNECTION: mysql
+    DB_HOST: mysql_server_testing
+    DB_PORT: 3306
+    DB_DATABASE: ${MYSQL_DATABASE}
+    DB_USERNAME: ${MYSQL_USER}
+    DB_PASSWORD: ${MYSQL_PASSWORD}
+  image: $DOCKER_IMAGE_NAME:latest
+  needs:
+    - build:mix:production
+  before_script:
+    - composer update
+    - composer install
+    - php -r "file_exists('.env') || copy('.env.example', '.env');"
+    - php artisan package:discover --ansi
+    - php artisan key:generate --ansi --force
+    - php artisan optimize
+  script:
+    - php artisan migrate --force
+    - vendor/bin/phpunit --log-junit report.xml
+  artifacts:
+    reports:
+      junit: report.xml
+  only:
+    - /-release/
+
+build:composer:laravel:
+  stage: build
+  cache:
+    paths:
+      - vendor
+  image: $DOCKER_IMAGE_NAME:latest
+  needs:
+    - build:mix:production
+  before_script:
+    - composer update
+    - composer install --no-interaction --optimize-autoloader --no-dev
+  script:
+    - php -r "file_exists('.env') || copy('.env.example', '.env');"
+    - php artisan package:discover --ansi
+    - php artisan key:generate --ansi --force
+    - php artisan optimize
+  only:
+    - /-release/
+  artifacts:
+    name: $CI_PROJECT_NAME-$CI_COMMIT_SHORT_SHA
+    paths:
+      # upload everything in current context folder to gitlab archive
+      - ./
+    exclude:
+      # ignore not important folder
+      - .git
+      - .git/**
+      - .env.example
+      - .gitignore
+      - .gitlab-ci.yml
+      - docker-compose*
+      - tests
+      - tests/**
+      - node_modules
+      - node_modules/**
+      - package-lock.json
+      - .phpunit.result.cache
+
+build:docker:laravel:
+  stage: build
+  image: ${PRIVATE_REGISTRY_PULL}/docker:${DOCKER_VERSION}
+  needs:
+    - build:composer:laravel
+  services:
+    - name: ${PRIVATE_REGISTRY_PULL}/docker:${DOCKER_DIND_VERSION}
+      entrypoint: [ "dockerd-entrypoint.sh" ]
+      command: [
+          "--insecure-registry=192.168.88.21:8087",
+          "--insecure-registry=192.168.88.21:8086"
+      ]
+      alias: dockerd
+  variables:
+    DOCKER_HOST: tcp://dockerd:2375
+    DOCKER_DRIVER: overlay2
+    DOCKER_TLS_CERTDIR: ""
+    DOCKER_BUILD_ARGS_ENTRIPOINT: "--build-arg PRIVATE_REGISTRY=${PRIVATE_REGISTRY_PULL}"
+    DOCKERFILE_LOCATION: "-f Dockerfile-ci-run"
+    DOCKER_IMAGE_NAME: "$PRIVATE_REGISTRY_PUSH/$PROJECT_GROUP_ID/docker-laravel"
+  before_script:
+    - mkdir -p .docker/ && cat $DOCKER_CONF_JSON > .docker/config.json
+  script:
+    - docker $DOCKER_CONFIG_FILE build $DOCKERFILE_LOCATION $DOCKER_BUILD_ARGS_ENTRIPOINT -t $DOCKER_IMAGE_NAME:$CI_COMMIT_SHORT_SHA -t $DOCKER_IMAGE_NAME:latest .
+    - docker $DOCKER_CONFIG_FILE image push $DOCKER_IMAGE_NAME:$CI_COMMIT_SHORT_SHA
+    - docker $DOCKER_CONFIG_FILE image push $DOCKER_IMAGE_NAME:latest
+  only:
+    - /-release/

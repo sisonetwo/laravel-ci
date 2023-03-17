@@ -1,0 +1,30 @@
+## npm
+node_modules
+
+## laravel storage
+/public/hot
+/public/storage
+/storage/*.key
+
+## laravel dependency
+/vendor
+
+## default config
+.env
+.env.backup
+.phpunit.result.cache
+docker-compose.override.yml
+Homestead.json
+Homestead.yaml
+
+## npm logs
+npm-debug.log
+yarn-error.log
+
+## text editor
+.idea
+.vscode
+.DS_Store
+
+## ssl certs
+.docker/ssl

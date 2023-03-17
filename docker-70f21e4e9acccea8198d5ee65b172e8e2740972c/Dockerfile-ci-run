@@ -1,0 +1,31 @@
+ARG DOCKER_IMAGE_VERSION=latest
+ARG DOCKER_IMAGE_NAME="com.maryanto.dimas.udemy/php-laravel"
+ARG PRIVATE_REGISTRY=192.168.88.21:8087
+FROM ${PRIVATE_REGISTRY}/${DOCKER_IMAGE_NAME}:${DOCKER_IMAGE_VERSION}
+
+ENV APP_DEBUG=false
+ENV APP_URL=""
+ENV APP_ENV=production
+ENV DB_CONNECTION=mysql
+ENV DB_HOST=localhost
+ENV DB_PORT=3306
+ENV DB_DATABASE=laravel
+ENV DB_USERNAME=laravel
+ENV DB_PASSWORD=laravel
+
+# copy all source-code
+COPY . .
+# copy config apache
+COPY .docker/000-default.apache.conf /etc/apache2/sites-enabled/000-default.conf
+# override default startup apache
+COPY .docker/apache2-foreground .docker/apache2-foreground
+
+# give full access
+RUN mkdir -p public/storage && \
+    chmod -R 777 storage/* && \
+    chmod -R 777 public/storage && \
+    chmod -R 777 .docker/*
+
+VOLUME ["${APP_SOURCE}/storage/app/public","${APP_SOURCE}/storage/logs"]
+
+CMD [".docker/apache2-foreground"]

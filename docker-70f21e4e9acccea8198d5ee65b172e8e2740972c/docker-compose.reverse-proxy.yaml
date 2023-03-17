@@ -1,0 +1,73 @@
+version: '3.9'
+services:
+  mysql:
+    image: mysql:5.7
+    environment:
+      - MYSQL_ROOT_PASSWORD=secretRootPasswd
+      - MYSQL_DATABASE=${DB_DATABASE}
+      - MYSQL_USER=${DB_USERNAME}
+      - MYSQL_PASSWORD=${DB_PASSWORD}
+    restart: always
+    networks:
+      - backend
+  laravel1:
+    image: dimmaryanto93/udemy-laravel-app:latest
+    ports:
+      - "8001:80"
+    environment:
+      - APP_ENV=production
+      - APP_DEBUG=false
+      - LOG_LEVEL=error
+      - DB_CONNECTION=mysql
+      - DB_HOST=mysql
+      - DB_PORT=3306
+      - DB_DATABASE
+      - DB_USERNAME
+      - DB_PASSWORD
+    depends_on:
+      - mysql
+    restart: always
+    networks:
+      - backend
+
+  laravel2:
+    image: dimmaryanto93/udemy-laravel-app:latest
+    ports:
+      - "8002:80"
+    environment:
+      - APP_ENV=production
+      - APP_DEBUG=false
+      - LOG_LEVEL=error
+      - DB_CONNECTION=mysql
+      - DB_HOST=mysql
+      - DB_PORT=3306
+      - DB_DATABASE
+      - DB_USERNAME
+      - DB_PASSWORD
+    depends_on:
+      - mysql
+    restart: always
+    networks:
+      - backend
+
+  laravel3:
+    image: dimmaryanto93/udemy-laravel-app:latest
+    ports:
+      - "8003:80"
+    environment:
+      - APP_ENV=production
+      - APP_DEBUG=false
+      - LOG_LEVEL=error
+      - DB_CONNECTION=mysql
+      - DB_HOST=mysql
+      - DB_PORT=3306
+      - DB_DATABASE
+      - DB_USERNAME
+      - DB_PASSWORD
+    depends_on:
+      - mysql
+    restart: always
+    networks:
+      - backend
+networks:
+  backend:

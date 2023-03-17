@@ -1,0 +1,30 @@
+ARG PHP_VERSION=8.0-apache
+FROM php:${PHP_VERSION}
+# install dependencies for laravel 8
+RUN apt-get update && apt-get install -y \
+  curl \
+  git \
+  libicu-dev \
+  libpq-dev \
+  libmcrypt-dev \
+  mariadb-client \
+  openssl \
+  unzip \
+  vim \
+  zip \
+  zlib1g-dev \
+  libpng-dev \
+  libzip-dev && \
+rm -r /var/lib/apt/lists/*
+# install extension for laravel 8
+RUN pecl install mcrypt-1.0.4 && \
+  docker-php-ext-install fileinfo exif pcntl bcmath gd mysqli pdo_mysql && \
+  docker-php-ext-enable mcrypt && \
+  a2enmod rewrite
+# install composer
+RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/bin/ --filename=composer
+
+ENV APP_SOURCE /var/www/php
+
+# Set working directory
+WORKDIR $APP_SOURCE

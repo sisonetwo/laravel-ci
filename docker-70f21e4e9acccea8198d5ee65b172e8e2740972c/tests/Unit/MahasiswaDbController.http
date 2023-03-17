@@ -1,0 +1,27 @@
+GET {{host}}:{{port}}{{context-path}}/api/db/mahasiswa/list
+Accept: application/json
+
+### get Mahasiswa list
+
+GET {{host}}:{{port}}{{context-path}}/api/db/mahasiswa/10511148
+Accept: application/json
+
+### get mahasiswa id
+
+POST {{host}}:{{port}}{{context-path}}/api/db/mahasiswa/save
+Accept: application/json
+Content-Type: application/json
+
+{
+    "nim": "10511150",
+    "nama": "Muhamad yusuf",
+    "email": "myusuf@gmail.com",
+    "semester": 3
+}
+
+### store mahasiswa
+
+DELETE {{host}}:{{port}}{{context-path}}/api/db/mahasiswa/f2386527-cea1-439c-b2a4-5ee884fbd7c2
+Accept: application/json
+
+### delete mahasiswa by id
